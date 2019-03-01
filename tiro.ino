@@ -9,33 +9,57 @@ volatile byte counterWD = 0; // Count how many times WDog has fired. Used in the
 // if WDog is set to 1 second TimeOut, and the counterWD loop to 10, the delay
 // between LED illuminations is increased to 1 x 10 = 10 seconds
 
+unsigned long timeDelayStarted = 0;
+bool isInDelay = false;
+bool isMotorRunning = false;
+unsigned long delayDuration = 4000000;
+
 void setup ()
 {
   resetWatchDog ();                     // do this first in case WDog fires
   pinMode ( ledPin, OUTPUT );           // I could put to INPUT between sleep_enable() and interrupts()
   // to save more power, then to OUTPUT in the ISR after wdt_disable()
 
-  runMotor();
-} // end of setup
+  //runMotor();
+}
 
 void loop ()
 {
-  if ( counterWD == 73 ) {                // Check if has run for a total of 5 minutes ((4s * 73 counts + 3s delay = 295) )
-    delay(3000);                          // Delay for 3 seconds
-    
-    runMotor();
-    counterWD = 0;                     
-  } 
+  if ( true ) { // counterWD >= 1 ) {
+    if ( !isInDelay && counterWD >= 1) {
+      timeDelayStarted = micros();
+      isInDelay = true;
+    }
 
-  sleepNow ();                          
+    if ( isInDelay ) {
+      if ( isMotorRunning
+					 && (micros() - timeDelayStarted >= 500000 )){
+				stopMotor();
+	   
+				isInDelay = false;
+				counterWD = 0;    
 
-} // end of loop ()
+				sleepNow ();
+      }
+      else if ( !isMotorRunning
+								&& (micros() - timeDelayStarted >= delayDuration )) {
+				delayDuration = 3500000;
+				timeDelayStarted = micros();
+				runMotor();
+      }
+    }
+  }
+}
 
 void runMotor() 
 {
-  digitalWrite ( ledPin, HIGH );     
-  delay ( 500 );      
-  digitalWrite ( ledPin, LOW ); 
+  digitalWrite ( ledPin, HIGH );
+  isMotorRunning = true;
+}
+
+void stopMotor() {
+  digitalWrite ( ledPin, LOW );
+  isMotorRunning = false;
 }
 
 void sleepNow ()
@@ -64,7 +88,7 @@ void resetWatchDog ()
   MCUSR = 0;
   WDTCR = bit ( WDCE ) | bit ( WDE ) | bit ( WDIF ); // allow changes, disable reset, clear existing interrupt
   // WDTCR = bit ( WDIE ) | bit ( WDP2 )| bit ( WDP1 ); // set WDIE ( Interrupt only, no Reset ) and 1 second TimeOut
-  // WDTCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut	
+  //TCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut	
   WDTCR = bit ( WDIE ) | bit ( WDP3 );     // 4 second time out
 
 
