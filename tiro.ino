@@ -9,8 +9,8 @@ volatile byte counterWD = 0;
 unsigned long timeDelayStarted = 0;
 bool isInDelay = false;
 bool isMotorRunning = false;
-unsigned long delayDuration = 4000000;
-unsigned int counterTarget = 14;
+unsigned long delayDuration = 3500000;
+unsigned int counterTarget = 1;
 
 void setup ()
 {
@@ -27,7 +27,8 @@ void loop ()
 {
 	if ( !isInDelay ) {
 		if ( counterWD == counterTarget ) {
-			counterWD = 0;    
+			counterWD = 0;
+			
 			timeDelayStarted = micros();
 			isInDelay = true;
 		}
@@ -46,7 +47,6 @@ void loop ()
 		}
 		else if ( !isMotorRunning
 							&& (micros() - timeDelayStarted >= delayDuration )) {
-			delayDuration = 3500000;
 			timeDelayStarted = micros();
 			runMotor();
 		}
