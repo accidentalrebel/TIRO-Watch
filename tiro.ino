@@ -4,15 +4,13 @@
 
 const byte ledPin = 0; // declare and initialise led on ATTiny digital pin zero
 byte saveADCSRA; // variable to save the content of the ADC for later. if needed.
-volatile byte counterWD = 0; // Count how many times WDog has fired. Used in the timing of the
-// loop to increase the delay before the LED is illuminated. For example,
-// if WDog is set to 1 second TimeOut, and the counterWD loop to 10, the delay
-// between LED illuminations is increased to 1 x 10 = 10 seconds
 
+volatile byte counterWD = 0; 
 unsigned long timeDelayStarted = 0;
 bool isInDelay = false;
 bool isMotorRunning = false;
 unsigned long delayDuration = 4000000;
+unsigned int counterTarget = 14;
 
 void setup ()
 {
@@ -20,35 +18,39 @@ void setup ()
   pinMode ( ledPin, OUTPUT );           // I could put to INPUT between sleep_enable() and interrupts()
   // to save more power, then to OUTPUT in the ISR after wdt_disable()
 
-  //runMotor();
+	timeDelayStarted = micros();
+	isInDelay = true;
+  runMotor();
 }
 
 void loop ()
 {
-  if ( true ) { // counterWD >= 1 ) {
-    if ( !isInDelay && counterWD >= 1) {
-      timeDelayStarted = micros();
-      isInDelay = true;
-    }
+	if ( !isInDelay ) {
+		if ( counterWD == counterTarget ) {
+			counterWD = 0;    
+			timeDelayStarted = micros();
+			isInDelay = true;
+		}
+		else if ( counterWD < counterTarget ) {
+			sleepNow();
+		}
+	}
 
-    if ( isInDelay ) {
-      if ( isMotorRunning
-					 && (micros() - timeDelayStarted >= 500000 )){
-				stopMotor();
+	if ( isInDelay ) {
+		if ( isMotorRunning
+				 && (micros() - timeDelayStarted >= 500000 )) {
+			stopMotor();
 	   
-				isInDelay = false;
-				counterWD = 0;    
-
-				sleepNow ();
-      }
-      else if ( !isMotorRunning
-								&& (micros() - timeDelayStarted >= delayDuration )) {
-				delayDuration = 3500000;
-				timeDelayStarted = micros();
-				runMotor();
-      }
-    }
-  }
+			isInDelay = false;
+			sleepNow ();
+		}
+		else if ( !isMotorRunning
+							&& (micros() - timeDelayStarted >= delayDuration )) {
+			delayDuration = 3500000;
+			timeDelayStarted = micros();
+			runMotor();
+		}
+	}
 }
 
 void runMotor() 
