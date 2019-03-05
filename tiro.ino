@@ -8,10 +8,13 @@ byte saveADCSRA; // variable to save the content of the ADC for later. if needed
 
 volatile byte counterWD = 0;
 unsigned long motorDuration = 500000;
-unsigned long waitDuration = 3500000;
+unsigned long waitDuration = 9500000;
 unsigned int counterTarget = 7;
-bool isInDelay = false;
+
 unsigned long timeDelayStarted = 0;
+
+bool isInDelay = false;
+bool isMotorRunning = false;
 
 void setup ()
 {
@@ -24,13 +27,19 @@ void setup ()
 void loop ()
 {
 	if ( !isInDelay ) {
-		startMotorSequence();
-		timeDelayStarted = millis();
+		runMotor();
+		timeDelayStarted = micros();
 		isInDelay = true;
 	}
 
 	if ( isInDelay ) {
-		if ( millis() - timeDelayStarted >= 9500 ) {
+		if ( isMotorRunning
+				 && micros() - timeDelayStarted >= motorDuration ) {
+			stopMotor();
+			timeDelayStarted = micros();
+		}
+		else if ( !isMotorRunning
+							&& micros() - timeDelayStarted >= waitDuration ) {
 			isInDelay = false;
 		}
 	}
@@ -56,10 +65,12 @@ void startMotorSequence()
 void runMotor() 
 {
   digitalWrite ( ledPin, HIGH );
+	isMotorRunning = true;
 }
 
 void stopMotor() {
   digitalWrite ( ledPin, LOW );
+	isMotorRunning = false;
 }
 
 void sleepNow ()
