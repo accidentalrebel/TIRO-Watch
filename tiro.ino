@@ -1,16 +1,15 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 #include <avr/wdt.h>
+#include <util/delay.h>
 
 const byte ledPin = 0; // declare and initialise led on ATTiny digital pin zero
 byte saveADCSRA; // variable to save the content of the ADC for later. if needed.
 
-volatile byte counterWD = 0; 
-unsigned long timeDelayStarted = 0;
-bool isInDelay = false;
-bool isMotorRunning = false;
-unsigned long delayDuration = 3500000;
-unsigned int counterTarget = 1;
+volatile byte counterWD = 0;
+unsigned long motorDuration = 500000;
+unsigned long waitDuration = 3500000;
+unsigned int counterTarget = 7;
 
 void setup ()
 {
@@ -18,50 +17,37 @@ void setup ()
   pinMode ( ledPin, OUTPUT );           // I could put to INPUT between sleep_enable() and interrupts()
   // to save more power, then to OUTPUT in the ISR after wdt_disable()
 
-	timeDelayStarted = micros();
-	isInDelay = true;
-  runMotor();
+	startMotorSequence();
+	sleepNow();
 }
 
 void loop ()
 {
-	if ( !isInDelay ) {
-		if ( counterWD == counterTarget ) {
-			counterWD = 0;
-			
-			timeDelayStarted = micros();
-			isInDelay = true;
-		}
-		else if ( counterWD < counterTarget ) {
-			sleepNow();
-		}
+	if ( counterWD == counterTarget ) {
+		counterWD = 0;
+
+		unsigned long int durationToUse = waitDuration - motorDuration;
+		delayMicroseconds(durationToUse);
+		startMotorSequence();
 	}
 
-	if ( isInDelay ) {
-		if ( isMotorRunning
-				 && (micros() - timeDelayStarted >= 500000 )) {
-			stopMotor();
-	   
-			isInDelay = false;
-			sleepNow ();
-		}
-		else if ( !isMotorRunning
-							&& (micros() - timeDelayStarted >= delayDuration )) {
-			timeDelayStarted = micros();
-			runMotor();
-		}
-	}
+	sleepNow();
+}
+
+void startMotorSequence()
+{
+		runMotor();
+		_delay_us(motorDuration);
+		stopMotor();
 }
 
 void runMotor() 
 {
   digitalWrite ( ledPin, HIGH );
-  isMotorRunning = true;
 }
 
 void stopMotor() {
   digitalWrite ( ledPin, LOW );
-  isMotorRunning = false;
 }
 
 void sleepNow ()
@@ -75,12 +61,11 @@ void sleepNow ()
   resetWatchDog ();                       // reset the WatchDog before beddy bies
   sleep_enable ();                        // allows the system to be commanded to sleep
   interrupts ();                          // turn on interrupts
-
+ 
   sleep_cpu ();                           // send the system to sleep, night night!
 
   sleep_disable ();                       // after ISR fires, return to here and disable sleep
   power_all_enable ();                    // turn on power to ADC, TIMER1 and 2, Serial Interface
-
   // ADCSRA = saveADCSRA;                 // turn on and restore the ADC if needed. Commented out, not needed.
 
 } // end of sleepNow ()
@@ -90,9 +75,8 @@ void resetWatchDog ()
   MCUSR = 0;
   WDTCR = bit ( WDCE ) | bit ( WDE ) | bit ( WDIF ); // allow changes, disable reset, clear existing interrupt
   // WDTCR = bit ( WDIE ) | bit ( WDP2 )| bit ( WDP1 ); // set WDIE ( Interrupt only, no Reset ) and 1 second TimeOut
-  //TCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut	
-  WDTCR = bit ( WDIE ) | bit ( WDP3 );     // 4 second time out
-
+  WDTCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut	
+  //WDTCR = bit ( WDIE ) | bit ( WDP3 );     // 4 second time out
 
   wdt_reset ();                            // reset WDog to parameters
 
