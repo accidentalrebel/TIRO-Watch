@@ -13,25 +13,26 @@ unsigned int counterTarget = 7;
 
 void setup ()
 {
-  resetWatchDog ();                     // do this first in case WDog fires
-  pinMode ( ledPin, OUTPUT );           // I could put to INPUT between sleep_enable() and interrupts()
-  // to save more power, then to OUTPUT in the ISR after wdt_disable()
-
-	startMotorSequence();
-	sleepNow();
+  pinMode ( ledPin, OUTPUT );
+	
+	/* startMotorSequence(); */
+	/* sleepNow(); */
 }
 
 void loop ()
 {
-	if ( counterWD == counterTarget ) {
-		counterWD = 0;
+	startMotorSequence();
+	_delay_us(9500000);
+	
+	/* if ( counterWD == counterTarget ) { */
+	/* 	counterWD = 0; */
 
-		unsigned long int durationToUse = waitDuration - motorDuration;
-		delayMicroseconds(durationToUse);
-		startMotorSequence();
-	}
+	/* 	unsigned long int durationToUse = waitDuration - motorDuration; */
+	/* 	delayMicroseconds(durationToUse); */
+	/* 	startMotorSequence(); */
+	/* } */
 
-	sleepNow();
+	/* sleepNow(); */
 }
 
 void startMotorSequence()
