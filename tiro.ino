@@ -10,6 +10,8 @@ volatile byte counterWD = 0;
 unsigned long motorDuration = 500000;
 unsigned long waitDuration = 3500000;
 unsigned int counterTarget = 7;
+bool isInDelay = false;
+unsigned long timeDelayStarted = 0;
 
 void setup ()
 {
@@ -21,8 +23,17 @@ void setup ()
 
 void loop ()
 {
-	startMotorSequence();
-	_delay_us(9500000);
+	if ( !isInDelay ) {
+		startMotorSequence();
+		timeDelayStarted = millis();
+		isInDelay = true;
+	}
+
+	if ( isInDelay ) {
+		if ( millis() - timeDelayStarted >= 9500 ) {
+			isInDelay = false;
+		}
+	}
 	
 	/* if ( counterWD == counterTarget ) { */
 	/* 	counterWD = 0; */
