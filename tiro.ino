@@ -6,10 +6,10 @@
 const byte ledPin = 0; // declare and initialise led on ATTiny digital pin zero
 byte saveADCSRA; // variable to save the content of the ADC for later. if needed.
 
-volatile byte counterWD = 0;
+unsigned long wdCounter = 0;
 unsigned long motorDuration = 500000;
-unsigned long waitDuration = 9500000;
-unsigned int counterTarget = 7;
+unsigned long waitDuration = 1500000;
+unsigned long wdCounterTarget = 3625;
 
 unsigned long timeDelayStarted = 0;
 
@@ -19,34 +19,30 @@ bool isMotorRunning = false;
 void setup ()
 {
   pinMode ( ledPin, OUTPUT );
-	
-	/* startMotorSequence(); */
-	/* sleepNow(); */
+
+	resetWatchDog();
+	startMotorSequence();
+	resetWatchDog();
 }
 
 void loop ()
 {
-	if ( !isInDelay ) {
-		startMotorSequence();
-		
+	if ( wdCounter == wdCounterTarget ) {
+		wdCounter = 0;
 		timeDelayStarted = micros();
 		isInDelay = true;
 	}
 
-	if ( isInDelay &&
-			 micros() - timeDelayStarted >= waitDuration ) {
+	if ( isInDelay
+			 && micros() - timeDelayStarted >= waitDuration) {
+		startMotorSequence();
+		wdCounter = 0;
 		isInDelay = false;
 	}
-	
-	/* if ( counterWD == counterTarget ) { */
-	/* 	counterWD = 0; */
 
-	/* 	unsigned long int durationToUse = waitDuration - motorDuration; */
-	/* 	delayMicroseconds(durationToUse); */
-	/* 	startMotorSequence(); */
-	/* } */
-
-	/* sleepNow(); */
+	if ( !isInDelay ) {
+		sleepNow();
+	}
 }
 
 void startMotorSequence()
@@ -92,7 +88,9 @@ void resetWatchDog ()
   MCUSR = 0;
   WDTCR = bit ( WDCE ) | bit ( WDE ) | bit ( WDIF ); // allow changes, disable reset, clear existing interrupt
   // WDTCR = bit ( WDIE ) | bit ( WDP2 )| bit ( WDP1 ); // set WDIE ( Interrupt only, no Reset ) and 1 second TimeOut
-  WDTCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut	
+  //WDTCR = bit ( WDIE ) | bit ( WDP3 )| bit ( WDP0 ); // 8 second TimeOut
+	//WDTCR = bit ( WDIE ) | bit (WDP0); // 32 ms TimeOut
+	WDTCR = bit ( WDIE ) | 0 << WDP3 | 0 << WDP2 | 0 << WDP1 | 0 << WDP0; // 16 ms TimeOut
   //WDTCR = bit ( WDIE ) | bit ( WDP3 );     // 4 second time out
 
   wdt_reset ();                            // reset WDog to parameters
@@ -102,9 +100,9 @@ void resetWatchDog ()
 ISR ( WDT_vect )
 {
   wdt_disable ();                           // until next time....
-  counterWD ++;                             // increase the WDog firing counter. Used in the loop to time the flash
+  wdCounter ++;                             // increase the WDog firing counter. Used in the loop to time the flash
   // interval of the LED. If you only want the WDog to fire within the normal
   // presets, say 2 seconds, then comment out this command and also the associated
-  // commands in the if ( counterWD..... ) loop, except the 2 digitalWrites and the
+  // commands in the if ( wdCounter..... ) loop, except the 2 digitalWrites and the
   // delay () commands.
 } // end of ISR
