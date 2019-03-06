@@ -27,21 +27,15 @@ void setup ()
 void loop ()
 {
 	if ( !isInDelay ) {
-		runMotor();
+		startMotorSequence();
+		
 		timeDelayStarted = micros();
 		isInDelay = true;
 	}
 
-	if ( isInDelay ) {
-		if ( isMotorRunning
-				 && micros() - timeDelayStarted >= motorDuration ) {
-			stopMotor();
-			timeDelayStarted = micros();
-		}
-		else if ( !isMotorRunning
-							&& micros() - timeDelayStarted >= waitDuration ) {
-			isInDelay = false;
-		}
+	if ( isInDelay &&
+			 micros() - timeDelayStarted >= waitDuration ) {
+		isInDelay = false;
 	}
 	
 	/* if ( counterWD == counterTarget ) { */
