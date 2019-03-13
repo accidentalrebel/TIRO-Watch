@@ -7,8 +7,8 @@ const byte motorPin = 0;
 
 unsigned long wdCounter = 0;
 unsigned long motorDuration = 500000;
-unsigned long waitDuration = 1500000;
-unsigned long wdCounterTarget = 18625;
+unsigned long waitDuration = 0;
+unsigned long wdCounterTarget = 75;
 unsigned long timeDelayStarted = 0;
 
 bool isInDelay = false;
@@ -68,7 +68,7 @@ void sleepNow () {
 void resetWatchDog () {
 	MCUSR = 0; // Clear various "reset" flags
 	WDTCR = bit ( WDCE ) | bit ( WDE ) | bit ( WDIF ); // Allow changes, disable reset, clear existing interrupt
-	WDTCR = bit ( WDIE ) | 0 << WDP3 | 0 << WDP2 | 0 << WDP1 | 0 << WDP0; // 16 ms TimeOut
+	WDTCR = bit ( WDIE ) | 1 << WDP3 | 0 << WDP2 | 0 << WDP1 | 0 << WDP0; // 4s timeout
 
 	wdt_reset (); // Reset the watchdog using the parameters
 }
