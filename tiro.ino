@@ -5,7 +5,8 @@
 
 const byte motorPin = 0;
 
-unsigned long wdCounter = 0;
+volatile unsigned long wdCounter = 0; // Volatile tells compiler to reload each time instead of optimizing
+
 unsigned long motorDuration = 500000;
 unsigned long waitDuration = 0;
 unsigned long wdCounterTarget = 75;
