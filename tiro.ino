@@ -13,7 +13,6 @@ unsigned long wdCounterTarget = 75;
 unsigned long timeDelayStarted = 0;
 
 bool isInDelay = false;
-bool isMotorRunning = false;
 
 void setup () {
 	pinMode ( motorPin, OUTPUT );
